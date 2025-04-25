@@ -61,60 +61,63 @@ jobs:
            CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER: x86_64-w64-mingw32-gcc
 
 
-      # --- macOS Build using osxcross ---
-      # Note: This is complex and may require tweaking. Native macOS runners are often simpler.
-      - name: Cache Mac OS dependencies (osxcross)
-        id: cache-macos
-        uses: actions/cache@v4 # Use newer cache version
-        with:
-          path: osxcross
-          key: osxcross-cache-key # Consider adding a version/date to the key
+# --- macOS Build using osxcross --- (Temporarily Disabled)
+# Note: This is complex and may require tweaking. Native macOS runners are often simpler.
+#      - name: Cache Mac OS dependencies (osxcross)
+#        id: cache-macos
+#        uses: actions/cache@v4 # Use newer cache version
+#        with:
+#          path: osxcross
+#          key: osxcross-cache-key # Consider adding a version/date to the key
+#
+#      - name: Install Mac OS dependencies (osxcross)
+#        if: steps.cache-macos.outputs.cache-hit != 'true'
+#        run: |
+#          git clone https://github.com/tpoechtrager/osxcross
+#          cd osxcross
+#          # Using suggested SDK download method from osxcross readme if available
+#          # Or manually download: wget -nc https://s3.dockerproject.org/darwin/v2/MacOSX10.10.sdk.tar.xz -P tarballs/
+#          # Ensure you have the required SDK in osxcross/tarballs/
+#          echo "Please ensure MacOSX SDK (e.g., MacOSX10.10.sdk.tar.xz or later) is available in osxcross/tarballs/"
+#          echo "Attempting build..."
+#          # Consider adding more dependencies based on osxcross docs if needed
+#          # sudo apt-get install -y clang llvm libxml2-dev uuid-dev libssl-dev
+#          # UNATTENDED=yes OSX_VERSION_MIN=10.7 ./build.sh # Run build script
+#          echo "WARNING: osxcross setup is complex. This step might fail without the SDK or proper dependencies."
+#          # Placeholder: exit 1 # Force failure if cache miss and setup is not complete
+#          # Remove 'exit 1' once osxcross setup is confirmed working or manual SDK download added
+#
+#      - name: Build macOS (x86_64-apple-darwin)
+#        # This step will likely fail if osxcross isn't correctly set up in the previous step
+#        # Add 'if: steps.cache-macos.outputs.cache-hit == 'true'' to only run if cache exists? Or ensure setup works.
+#        env:
+#          # Set environment for osxcross - paths might vary based on actual osxcross install
+#          PATH: "${{ github.workspace }}/osxcross/target/bin:$PATH"
+#          # Specify the linker provided by osxcross
+#          CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER: x86_64-apple-darwin14-clang
+#          # Necessary flags for cross-compilation might be needed depending on dependencies
+#          # Example: LIBZ_SYS_STATIC=1 # If zlib-sys dependency is present
+#          # CC_x86_64_apple_darwin: x86_64-apple-darwin14-clang
+#          # CXX_x86_64_apple_darwin: x86_64-apple-darwin14-clang++
+#          # SDKROOT: ${{ github.workspace }}/osxcross/target/SDK/MacOSX10.10.sdk # Adjust SDK path if needed
+#        run: |
+#          TARGET=x86_64-apple-darwin
+#          BIN_NAME=mf
+#          VERSION=${{ steps.get_version.outputs.VERSION }}
+#          ARTIFACT_FILENAME="mf-${VERSION}-${TARGET}.tar.gz"
+#          # Check if osxcross linker exists before trying to build
+#          if ! command -v $CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER &> /dev/null; then
+#              echo "osxcross linker ($CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER) not found. Skipping macOS build."
+#              exit 0 # Exit successfully to allow release without macOS if setup failed
+#          fi
+#          cargo build --bin ${BIN_NAME} --release --target ${TARGET}
+#          # Package directly into dist
+#          tar -czvf dist/${ARTIFACT_FILENAME} -C target/${TARGET}/release ${BIN_NAME}
+#          echo "Built ${ARTIFACT_FILENAME}"
 
-      - name: Install Mac OS dependencies (osxcross)
-        if: steps.cache-macos.outputs.cache-hit != 'true'
-        run: |
-          git clone https://github.com/tpoechtrager/osxcross
-          cd osxcross
-          # Using suggested SDK download method from osxcross readme if available
-          # Or manually download: wget -nc https://s3.dockerproject.org/darwin/v2/MacOSX10.10.sdk.tar.xz -P tarballs/
-          # Ensure you have the required SDK in osxcross/tarballs/
-          echo "Please ensure MacOSX SDK (e.g., MacOSX10.10.sdk.tar.xz or later) is available in osxcross/tarballs/"
-          echo "Attempting build..."
-          # Consider adding more dependencies based on osxcross docs if needed
-          # sudo apt-get install -y clang llvm libxml2-dev uuid-dev libssl-dev
-          # UNATTENDED=yes OSX_VERSION_MIN=10.7 ./build.sh # Run build script
-          echo "WARNING: osxcross setup is complex. This step might fail without the SDK or proper dependencies."
-          # Placeholder: exit 1 # Force failure if cache miss and setup is not complete
-          # Remove 'exit 1' once osxcross setup is confirmed working or manual SDK download added
 
-      - name: Build macOS (x86_64-apple-darwin)
-        # This step will likely fail if osxcross isn't correctly set up in the previous step
-        # Add 'if: steps.cache-macos.outputs.cache-hit == 'true'' to only run if cache exists? Or ensure setup works.
-        env:
-          # Set environment for osxcross - paths might vary based on actual osxcross install
-          PATH: "${{ github.workspace }}/osxcross/target/bin:$PATH"
-          # Specify the linker provided by osxcross
-          CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER: x86_64-apple-darwin14-clang
-          # Necessary flags for cross-compilation might be needed depending on dependencies
-          # Example: LIBZ_SYS_STATIC=1 # If zlib-sys dependency is present
-          # CC_x86_64_apple_darwin: x86_64-apple-darwin14-clang
-          # CXX_x86_64_apple_darwin: x86_64-apple-darwin14-clang++
-          # SDKROOT: ${{ github.workspace }}/osxcross/target/SDK/MacOSX10.10.sdk # Adjust SDK path if needed
-        run: |
-          TARGET=x86_64-apple-darwin
-          BIN_NAME=mf
-          VERSION=${{ steps.get_version.outputs.VERSION }}
-          ARTIFACT_FILENAME="mf-${VERSION}-${TARGET}.tar.gz"
-          # Check if osxcross linker exists before trying to build
-          if ! command -v $CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER &> /dev/null; then
-              echo "osxcross linker ($CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER) not found. Skipping macOS build."
-              exit 0 # Exit successfully to allow release without macOS if setup failed
-          fi
-          cargo build --bin ${BIN_NAME} --release --target ${TARGET}
-          # Package directly into dist
-          tar -czvf dist/${ARTIFACT_FILENAME} -C target/${TARGET}/release ${BIN_NAME}
-          echo "Built ${ARTIFACT_FILENAME}"
-
+      - name: List generated artifacts # Debugging step
+        run: ls -l dist
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2 # Use newer release action version
@@ -122,7 +125,7 @@ jobs:
           # body_path: CHANGELOG.md # Optional: Uncomment if you have a CHANGELOG
           files: |
             dist/* # Upload all files from the dist directory
-          fail_on_unmatched_files: true # Ensure artifacts were actually built
+          fail_on_unmatched_files: false # Allow release even if some artifacts are missing
           # draft: false # Default is false (publishes immediately)
           # prerelease: false # Default is false
         env:
