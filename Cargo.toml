@@ -1,7 +1,7 @@
 [package]
 name = "mf-speak"
 version = "0.3.0"
-edition = "2024"
+edition = "2021"
 description = "A spicy little command wrapper that provides audible feedback with attitude"
 authors = ["arvindell"]
 license = "MIT"
