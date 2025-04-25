@@ -19,7 +19,7 @@ mf is a spicy little wrapper for your shell commands that provides audible feedb
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/mf.git
+git clone https://github.com/arvindell/mf.git
 cd mf
 
 # Build in release mode
@@ -41,7 +41,7 @@ npm install -g mf-speak
 ### Using Cargo
 
 ```bash
-cargo install --git https://github.com/yourusername/mf
+cargo install --git https://github.com/arvindell/mf
 ```
 
 ## 🎮 Usage

@@ -6,7 +6,7 @@ Thanks for considering contributing to MF! This document explains how to get sta
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/mf.git
+git clone https://github.com/arvindell/mf.git
 cd mf
 ```
 
