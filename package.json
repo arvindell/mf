@@ -1,6 +1,6 @@
 {
   "name": "mf-speak",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "A spicy little command wrapper that provides audible feedback with attitude",
   "files": [
     "npm/**/*",

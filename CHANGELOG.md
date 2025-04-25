@@ -12,7 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Basic command execution with text-to-speech feedback
 - Cross-platform support (macOS, Linux, Windows)
 - Random success and failure messages
-- Command line interface using clap
+- Command line interface using clap 
+
+## [0.3.3] - 2023-05-31
+
+### Added
+- Homebrew installation support via tap
+- Updated documentation with installation instructions
 
 ## [0.3.2] - 2023-05-31
 
