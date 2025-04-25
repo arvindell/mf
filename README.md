@@ -32,6 +32,12 @@ cp target/release/mf ~/.local/bin/   # or sudo cp target/release/mf /usr/local/b
 # copy target\release\mf.exe %USERPROFILE%\bin\
 ```
 
+### Using npm
+
+```bash
+npm install -g mf-speak
+```
+
 ### Using Cargo
 
 ```bash

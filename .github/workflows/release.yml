@@ -1,0 +1,136 @@
+"""name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Trigger on version tags like v1.0.0
+
+permissions:
+  contents: write # Needed to create releases and upload artifacts
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: true # Create a draft release first
+          prerelease: false
+
+  build-release:
+    name: Build Release Artifacts
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            name: mf-linux-x64.tar.gz
+            bin: mf
+            archive_cmd: |
+              tar czvf ${{ matrix.name }} -C target/${{ matrix.target }}/release ${{ matrix.bin }}
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            name: mf-macos-x64.tar.gz
+            bin: mf
+            archive_cmd: |
+              tar czvf ${{ matrix.name }} -C target/${{ matrix.target }}/release ${{ matrix.bin }}
+          - target: aarch64-apple-darwin
+            os: macos-latest # Use macos-latest for ARM64 cross-compilation or self-hosted runner
+            name: mf-macos-arm64.tar.gz
+            bin: mf
+            archive_cmd: |
+              tar czvf ${{ matrix.name }} -C target/${{ matrix.target }}/release ${{ matrix.bin }}
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            name: mf-windows-x64.zip
+            bin: mf.exe
+            archive_cmd: |
+              Compress-Archive -Path target/${{ matrix.target }}/release/${{ matrix.bin }} -DestinationPath ${{ matrix.name }}
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build binary
+        run: cargo build --release --target ${{ matrix.target }}
+        env:
+          # Add any necessary build environment variables here
+          # e.g., for cross-compilation if needed
+          # CC_aarch64_apple_darwin: aarch64-apple-darwin-gcc # Example for cross-compiling on Linux
+          # CXX_aarch64_apple_darwin: aarch64-apple-darwin-g++ # Example
+          # You might need more setup for cross-compiling specific targets
+          CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER: clang
+          SDKROOT: $(xcrun --sdk macosx --show-sdk-path) # Needed for macOS ARM64 cross-compilation on x64 runner
+
+
+      - name: Package binary
+        shell: bash # Use bash for consistency in tar commands, except windows
+        run: ${{ matrix.archive_cmd }}
+        if: matrix.os != 'windows-latest'
+
+      - name: Package binary (Windows)
+        shell: pwsh # Use PowerShell for Compress-Archive
+        run: ${{ matrix.archive_cmd }}
+        if: matrix.os == 'windows-latest'
+
+
+      - name: Adjust artifact name for install.js compatibility
+        id: adjust_name
+        shell: bash
+        run: |
+          VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//') # Remove leading 'v'
+          EXPECTED_FILENAME="mf-v${VERSION}-${{ matrix.target }}.${{ matrix.name##*. }}"
+          echo "Original name: ${{ matrix.name }}"
+          echo "Expected name: ${EXPECTED_FILENAME}"
+          if [ "${{ matrix.name }}" != "$EXPECTED_FILENAME" ]; then
+             echo "Renaming artifact for install.js compatibility..."
+             mv "${{ matrix.name }}" "$EXPECTED_FILENAME"
+             echo "ASSET_NAME=$EXPECTED_FILENAME" >> $GITHUB_OUTPUT
+          else
+             echo "ASSET_NAME=${{ matrix.name }}" >> $GITHUB_OUTPUT
+          fi
+          echo "Final asset name: $(cat $GITHUB_OUTPUT | grep ASSET_NAME | cut -d '=' -f 2)"
+
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./${{ steps.adjust_name.outputs.ASSET_NAME }}
+          asset_name: ${{ steps.adjust_name.outputs.ASSET_NAME }}
+          asset_content_type: application/octet-stream # Or specific type like application/zip, application/gzip
+
+  publish-release:
+      name: Publish Release
+      needs: [create-release, build-release] # Run after all builds complete
+      runs-on: ubuntu-latest
+      steps:
+        - name: Publish Release (remove draft status)
+          uses: actions/github-script@v6
+          with:
+            github-token: ${{ secrets.GITHUB_TOKEN }}
+            script: |
+              await github.rest.repos.updateRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: ${{ needs.create-release.outputs.id }},
+                draft: false
+              }) 

@@ -1,0 +1,31 @@
+{
+  "name": "mf-speak",
+  "version": "0.2.0",
+  "description": "A spicy little command wrapper that provides audible feedback with attitude",
+  "files": [
+    "npm/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "mf": "./npm/run.js"
+  },
+  "scripts": {
+    "postinstall": "node npm/install.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arvindell/mf.git"
+  },
+  "keywords": ["command-line", "utility", "productivity", "text-to-speech", "cli", "feedback", "tts"],
+  "author": "arvindell",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/arvindell/mf/issues"
+  },
+  "homepage": "https://github.com/arvindell/mf#readme",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "tar": "^6.2.0"
+  }
+} 
