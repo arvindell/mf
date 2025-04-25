@@ -1,5 +1,7 @@
 use clap::Parser;
 use rand::seq::SliceRandom;
+use std::env;
+use std::path::PathBuf;
 use std::process::{Command, ExitStatus};
 
 /// A spicy little wrapper that yells at you depending on command success.
@@ -27,17 +29,62 @@ fn main() {
                 .status()
                 .expect("Failed to run command")
         } else {
-            Command::new("sh")
-                .arg("-c")
-                .arg(&cmd_str)
-                .status()
-                .expect("Failed to run command")
+            execute_with_shell(&cmd_str)
         };
 
         if status.success() {
             speak_success();
         } else {
             speak_failure();
+        }
+    }
+}
+
+/// Execute a command string with the user's shell, preserving aliases
+fn execute_with_shell(cmd_str: &str) -> ExitStatus {
+    // Get user's shell
+    let shell = env::var("SHELL").unwrap_or_else(|_| String::from("sh"));
+    let shell_path = PathBuf::from(&shell);
+    let shell_name = shell_path.file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("sh");
+    
+    // Use different strategies depending on the shell
+    match shell_name {
+        "zsh" => {
+            // For zsh, create a special command that forces alias expansion
+            // Using -i for interactive mode and wrapping command with 'eval'
+            let eval_cmd = format!("eval '{}'", cmd_str.replace("'", "'\\''"));
+            Command::new(&shell)
+                .args(&["-i", "-c", &eval_cmd])
+                .status()
+                .expect("Failed to run command")
+        },
+        "bash" => {
+            // For bash, source profile and then execute
+            let home = env::var("HOME").unwrap_or_else(|_| String::from(""));
+            let exec_cmd = format!("source {0}/.bashrc 2>/dev/null || source {0}/.bash_profile 2>/dev/null; {1}", 
+                                  home, cmd_str);
+            Command::new(&shell)
+                .args(&["-c", &exec_cmd])
+                .status()
+                .expect("Failed to run command")
+        },
+        "fish" => {
+            // For fish shell
+            let home = env::var("HOME").unwrap_or_else(|_| String::from(""));
+            let exec_cmd = format!("source {0}/.config/fish/config.fish 2>/dev/null; {1}", home, cmd_str);
+            Command::new(&shell)
+                .args(&["-c", &exec_cmd])
+                .status()
+                .expect("Failed to run command")
+        },
+        _ => {
+            // For unknown shells, just run the command directly
+            Command::new(&shell)
+                .args(&["-c", cmd_str])
+                .status()
+                .expect("Failed to run command")
         }
     }
 }
