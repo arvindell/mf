@@ -14,42 +14,10 @@ fn main() {
     let args = Cli::parse();
     
     if args.command.is_empty() {
-        // No command provided, check the status of the previous command
-        let exit_code = if cfg!(windows) {
-            // On Windows, get ERRORLEVEL
-            let output = Command::new("cmd")
-                .args(&["/C", "echo %ERRORLEVEL%"])
-                .output()
-                .expect("Failed to get ERRORLEVEL");
-            
-            let error_level = String::from_utf8_lossy(&output.stdout)
-                .trim()
-                .parse::<i32>()
-                .unwrap_or(0);
-            
-            error_level
-        } else {
-            // On Unix/Linux, get $?
-            let output = Command::new("sh")
-                .args(&["-c", "echo $?"])
-                .output()
-                .expect("Failed to get exit status");
-            
-            let exit_status = String::from_utf8_lossy(&output.stdout)
-                .trim()
-                .parse::<i32>()
-                .unwrap_or(0);
-            
-            exit_status
-        };
-        
-        if exit_code == 0 {
-            speak_success();
-        } else {
-            speak_failure();
-        }
+        // No command provided, just announce completion
+        speak_completion();
     } else {
-        // Command provided, run it
+        // Command provided, run it and report status
         let cmd_str = args.command.join(" ");
 
         // Run the command using the shell
@@ -106,6 +74,23 @@ fn speak_failure() {
         "Holy shit, that went sideways fast!",
     ];
     speak(failure_messages.choose(&mut rand::thread_rng()).unwrap())
+}
+
+/// Say a random completion phrase using text-to-speech
+fn speak_completion() {
+    let completion_messages = [
+        "Alright, that command finished.",
+        "Okay, the damn thing is done running.",
+        "Finished! Fucking finally",
+        "That shit's complete. What next now?",
+        "Command execution wrapped up.",
+        "All done with that crap.",
+        "It finished, for fuck's sake.",
+        "Task complete. Happy now?",
+        "Finally! That command is done.",
+        "The process ended. Took its fucking time.",
+    ];
+    speak(completion_messages.choose(&mut rand::thread_rng()).unwrap())
 }
 
 /// Say a phrase using platform-specific text-to-speech
