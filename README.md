@@ -15,6 +15,25 @@ mf is a spicy little wrapper for your shell commands that provides audible feedb
 
 ## 📦 Installation
 
+### Using Homebrew
+
+```bash
+brew tap arvindell/tap
+brew install mf-speak
+```
+
+### Using npm
+
+```bash
+npm install -g mf-speak
+```
+
+### Using Cargo
+
+```bash
+cargo install mf-speak
+```
+
 ### From Source
 
 ```bash
@@ -30,18 +49,6 @@ cp target/release/mf ~/.local/bin/   # or sudo cp target/release/mf /usr/local/b
 
 # Or on Windows, copy the binary to a location in your PATH
 # copy target\release\mf.exe %USERPROFILE%\bin\
-```
-
-### Using npm
-
-```bash
-npm install -g mf-speak
-```
-
-### Using Cargo
-
-```bash
-cargo install --git https://github.com/arvindell/mf
 ```
 
 ## 🎮 Usage
