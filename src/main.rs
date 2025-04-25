@@ -6,32 +6,71 @@ use std::process::{Command, ExitStatus};
 #[derive(Parser)]
 struct Cli {
     /// The shell command to run
-    #[arg(required = true)]
+    #[arg(required = false)]
     command: Vec<String>,
 }
 
 fn main() {
     let args = Cli::parse();
-    let cmd_str = args.command.join(" ");
-
-    // Run the command using the shell
-    let status: ExitStatus = if cfg!(windows) {
-        Command::new("cmd")
-            .args(&["/C", &cmd_str])
-            .status()
-            .expect("Failed to run command")
+    
+    if args.command.is_empty() {
+        // No command provided, check the status of the previous command
+        let exit_code = if cfg!(windows) {
+            // On Windows, get ERRORLEVEL
+            let output = Command::new("cmd")
+                .args(&["/C", "echo %ERRORLEVEL%"])
+                .output()
+                .expect("Failed to get ERRORLEVEL");
+            
+            let error_level = String::from_utf8_lossy(&output.stdout)
+                .trim()
+                .parse::<i32>()
+                .unwrap_or(0);
+            
+            error_level
+        } else {
+            // On Unix/Linux, get $?
+            let output = Command::new("sh")
+                .args(&["-c", "echo $?"])
+                .output()
+                .expect("Failed to get exit status");
+            
+            let exit_status = String::from_utf8_lossy(&output.stdout)
+                .trim()
+                .parse::<i32>()
+                .unwrap_or(0);
+            
+            exit_status
+        };
+        
+        if exit_code == 0 {
+            speak_success();
+        } else {
+            speak_failure();
+        }
     } else {
-        Command::new("sh")
-            .arg("-c")
-            .arg(&cmd_str)
-            .status()
-            .expect("Failed to run command")
-    };
+        // Command provided, run it
+        let cmd_str = args.command.join(" ");
 
-    if status.success() {
-        speak_success();
-    } else {
-        speak_failure();
+        // Run the command using the shell
+        let status: ExitStatus = if cfg!(windows) {
+            Command::new("cmd")
+                .args(&["/C", &cmd_str])
+                .status()
+                .expect("Failed to run command")
+        } else {
+            Command::new("sh")
+                .arg("-c")
+                .arg(&cmd_str)
+                .status()
+                .expect("Failed to run command")
+        };
+
+        if status.success() {
+            speak_success();
+        } else {
+            speak_failure();
+        }
     }
 }
 
@@ -71,26 +110,18 @@ fn speak_failure() {
 
 /// Say a phrase using platform-specific text-to-speech
 fn speak(phrase: &str) {
-    println!("{}", phrase); // Always print the message as fallback
-
     #[cfg(target_os = "macos")]
     {
-        let _ = Command::new("say")
-            .arg(phrase)
-            .status();
+        let _ = Command::new("say").arg(phrase).status();
     }
 
     #[cfg(target_os = "linux")]
     {
         // Try espeak first, fall back to espeak-ng if available
-        let espeak_result = Command::new("espeak")
-            .arg(phrase)
-            .status();
-            
+        let espeak_result = Command::new("espeak").arg(phrase).status();
+
         if espeak_result.is_err() {
-            let _ = Command::new("espeak-ng")
-                .arg(phrase)
-                .status();
+            let _ = Command::new("espeak-ng").arg(phrase).status();
         }
     }
 
@@ -104,7 +135,7 @@ fn speak(phrase: &str) {
             // Replace single quotes with escaped single quotes for PowerShell
             phrase.replace("'", "''")
         );
-        
+
         let _ = Command::new("powershell")
             .arg("-Command")
             .arg(&ps_script)

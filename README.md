@@ -8,6 +8,7 @@ mf is a spicy little wrapper for your shell commands that provides audible feedb
 ## ✨ Features
 
 - Runs any shell command and reports success/failure with text-to-speech
+- Use it as a prefix to commands, or after a command to check its status
 - Cross-platform: works on macOS, Linux, and Windows
 - Collection of randomized R-rated messages to bring some fun to your terminal
 - Simple interface - just prefix any command with `mf`
@@ -39,23 +40,39 @@ cargo install --git https://github.com/yourusername/mf
 
 ## 🎮 Usage
 
-```
-mf [COMMAND]
-```
+You can use mf in two ways:
+
+1. **As a command prefix** (run command and get feedback):
+   ```bash
+   mf [COMMAND]
+   ```
+
+2. **After a command** (get feedback about the previous command):
+   ```bash
+   [COMMAND]; mf
+   ```
+   This is useful when you want to know when a long-running task completes.
 
 ### Examples
 
 ```bash
-# Run a successful command
+# Run a successful command with mf prefix
 mf ls -la
 # Speaks: "Hell yeah, it fucking worked!" (or other random success message)
 
-# Run a failing command
+# Run a failing command with mf prefix
 mf some-nonexistent-command
 # Speaks: "What the hell did you do wrong?" (or other random failure message)
 
 # Multi-word commands work too
 mf "find . -name '*.rs' | wc -l"
+
+# Run a command and get feedback after completion
+ls -la; mf
+# Speaks success or failure based on ls command's exit status
+
+# Great for long-running commands
+make build; mf
 ```
 
 ## 🔊 Text-to-Speech Support
@@ -68,7 +85,7 @@ mf uses different text-to-speech mechanisms depending on your platform:
 
 If no text-to-speech capability is available, messages will still be printed to the console.
 
-## 🚀 Why Use `mf`?
+## 🚀 Why Use mf?
 
 This tool is perfect for:
 
